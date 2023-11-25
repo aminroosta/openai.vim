@@ -17,4 +17,4 @@ let s:lua_deps_loc =  expand("<sfile>:h:r") . "/../lua/confluence/deps"
 exe "lua package.path = package.path .. ';" . s:lua_deps_loc . "/lua-?/init.lua'"
 
 " Exposes the plugin's functions for use as commands in Neovim.
-command! -nargs=1 Echo lua require("confluence").echo(vim.fn.expand("<args>"))
+command! -range -nargs=? Openai lua require("confluence").openai(<line1>, <line2>, <f-args>)
