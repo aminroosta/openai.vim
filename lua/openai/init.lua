@@ -102,7 +102,8 @@ function M.rewrite(line1, line2, key)
 end
 
 function M.openai(line1, line2, command)
-  if (command == nil) then
+  vim.print("openai", line1, line2, command)
+  if (command == "list") then
     Menu.menu(M.commands, function(key)
       M.rewrite(line1, line2, key)
     end)

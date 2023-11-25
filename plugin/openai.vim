@@ -17,4 +17,4 @@ let s:lua_deps_loc =  expand("<sfile>:h:r") . "/../lua/openai/deps"
 exe "lua package.path = package.path .. ';" . s:lua_deps_loc . "/lua-?/init.lua'"
 
 " Exposes the plugin's functions for use as commands in Neovim.
-command! -range -nargs=? Openai lua require("openai").openai(<line1>, <line2>, <f-args>)
+command! -range -nargs=1 Openai lua require("openai").openai(<line1>, <line2>, <f-args>)

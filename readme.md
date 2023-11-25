@@ -31,7 +31,7 @@ For example, to add a command that generates a summary of the input text, you ca
 ```lua
 -- TEXT will be replaced with the selected text
 require("openai").commands = {
-  Summary = {
+  summary = {
     {
       role = "user",
       content = "Write a summary of the following text:\n\nTEXT"
@@ -45,12 +45,12 @@ require("openai").commands = {
 The plugin exposes a visual mode command `:Openai` that shows a popup with configured commands.
 
 ```vim
-:'<,'>Openai
+:'<,'>Openai list
 ```
 
 If an argument is given, the popup menu will be skipped.
 
 ```vim
-:'<,'>Openai Summary
+:'<,'>Openai summary
 ```
 
