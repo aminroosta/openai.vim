@@ -20,6 +20,7 @@ function M.post(model, messages, on_stdout)
   local data = vim.json.encode({
     model = model,
     messages = messages,
+    stream = true,
   })
   return curl.post("https://api.openai.com/v1/chat/completions", {
     stream = on_stdout,
@@ -44,9 +45,6 @@ function M.split(str, delimiter)
   return result
 end
 
-vim.cmd("highlight OpenaiHighlight gui=bold cterm=bold ctermbg=lightblue guibg=lightblue")
-local ns_id = vim.api.nvim_create_namespace("openai")
-
 function M.rewrite(line1, line2, key)
   line1 = line1 - 1
   local command = M.commands[key]
@@ -64,35 +62,28 @@ function M.rewrite(line1, line2, key)
   end
 
   local chunk = ""
+  local streamed = ""
   local callback = function(_, line)
     chunk = chunk .. line
-    local ok, result = pcall(vim.json.decode, chunk)
+
+    local chunk_cleaned = string.gsub(chunk, "^data: ", "")
+    local ok, result = pcall(vim.json.decode, chunk_cleaned)
+
 
     if (ok) then
-      local content = result.choices[1].message.content
+      local scontent = result.choices[1].delta.content
+      local finish_reason = result.choices[1].delta.finish_reason
 
-      local lines = M.split(content, "\n")
+      if (type(scontent) ~= "string") then
+        return
+      end
+
+      streamed = streamed .. scontent
+
+      local lines = M.split(streamed, "\n")
 
       vim.schedule(function()
-        vim.api.nvim_buf_set_lines(buf, line1, line1 + #lines + 1, false, lines)
-        local ids = {}
-        for idx, line in ipairs(lines) do
-          local i = line1 + idx - 1
-          local id = vim.api.nvim_buf_set_extmark(
-            0, ns_id, i, 0,
-            {
-              end_row = i,
-              end_col = string.len(line),
-              hl_group = "OpenaiHighlight",
-            })
-          table.insert(ids, id)
-        end
-        vim.defer_fn(function()
-          for _, id in ipairs(ids) do
-            vim.api.nvim_buf_del_extmark(buf, ns_id, id)
-          end
-        end, 1500)
-        line1 = line1 + #lines
+        vim.api.nvim_buf_set_lines(buf, line1, line1 + #lines, false, lines)
       end)
       chunk = ""
     end
@@ -102,7 +93,6 @@ function M.rewrite(line1, line2, key)
 end
 
 function M.openai(line1, line2, command)
-  vim.print("openai", line1, line2, command)
   if (command == "list") then
     Menu.menu(M.commands, function(key)
       M.rewrite(line1, line2, key)
