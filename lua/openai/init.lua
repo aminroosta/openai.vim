@@ -1,19 +1,13 @@
-local Menu = require("confluence.menu")
+local Menu = require("openai.menu")
 
 
 local M = {}
 
 M.commands = {
-  rewrite = {
+  Summary = {
     {
       role = "user",
-      content = "Fix grammatical mistakes and reorder sentences if needed:\n\nTEXT"
-    }
-  },
-  ["Jira Ticket"] = {
-    {
-      role = "user",
-      content = [[Write a concise Jira ticket: TEXT]]
+      content = "Write a summary of the following text:\n\nTEXT"
     }
   },
 }
@@ -50,8 +44,6 @@ function M.split(str, delimiter)
   return result
 end
 
--- define the ConfluenceHighlight highlight group
--- with bold text and light sky blue background
 vim.cmd("highlight OpenaiHighlight gui=bold cterm=bold ctermbg=lightblue guibg=lightblue")
 local ns_id = vim.api.nvim_create_namespace("openai")
 
