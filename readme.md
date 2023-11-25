@@ -4,7 +4,7 @@ A Neovim plugin that exposes OpenAI’s Chat Completion API.
 
 ### Installation
 
-Add your `OPENAI_API_KEY` to your environment variables.
+Add `OPENAI_API_KEY` to your environment variables.
 ```bash
 echo 'export OPENAI_API_KEY' >> ~/.bashrc
 ```
@@ -40,7 +40,6 @@ require("openai").commands = {
 }
 ```
 
-```
 ### Usage
 
 The plugin exposes a visual mode command `:Openai` that shows a popup with configured commands.
