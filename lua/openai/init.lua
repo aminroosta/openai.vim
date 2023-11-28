@@ -13,6 +13,7 @@ M.commands = {
 }
 
 local OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+local OPENAI_ENDPOINT = os.getenv("OPENAI_ENDPOINT") or "https://api.openai.com"
 
 local curl = require("plenary.curl")
 
@@ -22,7 +23,7 @@ function M.post(model, messages, on_stdout)
     messages = messages,
     stream = true,
   })
-  return curl.post("https://api.openai.com/v1/chat/completions", {
+  return curl.post(OPENAI_ENDPOINT .. "/v1/chat/completions", {
     stream = on_stdout,
     headers = {
       ["Authorization"] = "Bearer " .. OPENAI_API_KEY,

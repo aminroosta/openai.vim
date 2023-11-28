@@ -4,12 +4,18 @@ A Neovim plugin that exposes OpenAI’s Chat Completion API.
 
 ### Installation
 
-Add `OPENAI_API_KEY` to your environment variables.
+1. Add your `OPENAI_API_KEY` to the environment variables by running the following command in the terminal:
 ```bash
-echo 'export OPENAI_API_KEY' >> ~/.bashrc
+echo 'export OPENAI_API_KEY=your-openai-key' >> ~/.bashrc
 ```
 
-Using [packer.nvim](https://github.com/wbthomason/packer.nvim), add this to your init.lua:
+2. (Optional) If you are using an opensource LLM via [lmstudio](https://lmstudio.ai/), you can export `OPENAI_ENDPOINT` by running these commands in the terminal:
+```bash
+echo 'export OPENAI_API_KEY' >> ~/.bashrc
+echo 'export OPENAI_ENDPOINT=http://192.168.2.20:1234' >> ~/.bashrc
+```
+
+3. Using [packer.nvim](https://github.com/wbthomason/packer.nvim), add the following code to your `init.lua` file:
 ```lua
 require('packer').startup(function()
   use {
