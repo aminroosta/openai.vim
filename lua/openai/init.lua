@@ -14,7 +14,7 @@ M.commands = {
 
 local OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 local OPENAI_ENDPOINT = os.getenv("OPENAI_ENDPOINT") or "https://api.openai.com"
-local OPENAI_CHAT_MODEL = os.getenv("OPENAI_CHAT_MODEL") or "gpt-3.5-turbo"
+local OPENAI_CHAT_MODEL = os.getenv("OPENAI_CHAT_MODEL") or "gpt-4o-mini"
 
 local curl = require("plenary.curl")
 
