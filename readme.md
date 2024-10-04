@@ -40,7 +40,7 @@ export OPENAI_CHAT_MODEL='lmstudio-community/Llama-3.2-3B-Instruct-GGUF'
 export OPENAI_ENDPOINT='http://127.0.0.1:1234/v1/chat/completions'
 ```
 
-## Configuration
+## Configuration using JSON
 To customize your commands, create or modify the `~/.config/nvim/commands.json` file. This file should contain your command configurations in JSON format.  
 For information on structuring your commands, refer to OpenAI's [Chat Completion API](https://platform.openai.com/docs/guides/text-generation/chat-completions-api) documentation.
 
@@ -90,3 +90,24 @@ The first argument references the key in your `~/.config/nvim/commands.json` fil
 :'<,'>Openai rewrite
 :'<,'>Openai eng
 ```
+
+## Configuration using yaml
+If you find `.yaml` files easier to modify and maintain, create `~/.config/nvim/commands.yml` file, and manually convert it to json.
+
+```yaml
+# cat ~/.config/nvim/commands.yml | yq -o json > ~/.config/nvim/commands.json
+jsdoc:
+  - role: "user"
+    content: "Convert this to JSDoc format:\nTEXT"
+ask:
+  - role: "user"
+    content: "TEXT"
+rewrite:
+  - role: "user"
+    content: "Fix grammatical mistakes and reorder sentences if needed:\n\nTEXT"
+eng:
+  - role: "user"
+    content: "Rewrite this in natural english:\n\nTEXT"
+```
+
+You'd need to `brew install yq` for that conversion to work.
