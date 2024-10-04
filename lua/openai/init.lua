@@ -3,7 +3,7 @@ local Ask = require("openai.ask")
 local curl = require("plenary.curl")
 
 local OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-local OPENAI_ENDPOINT = os.getenv("OPENAI_ENDPOINT") or "https://api.openai.com"
+local OPENAI_ENDPOINT = os.getenv("OPENAI_ENDPOINT") or "https://api.openai.com/v1/chat/completions"
 local OPENAI_CHAT_MODEL = os.getenv("OPENAI_CHAT_MODEL") or "gpt-4o-mini"
 
 local M = {}
@@ -31,7 +31,8 @@ function M.post(messages, on_stdout)
     messages = messages,
     stream = true,
   })
-  return curl.post(OPENAI_ENDPOINT .. "/v1/chat/completions", {
+
+  return curl.post(OPENAI_ENDPOINT, {
     stream = on_stdout,
     headers = {
       ["Authorization"] = "Bearer " .. OPENAI_API_KEY,
@@ -63,13 +64,17 @@ function M.rewrite(line1, line2, messages, process)
   local callback = function(_, line)
     chunk = chunk .. line
 
+    -- openai has the extra "data:" prefix
     local chunk_cleaned = string.gsub(chunk, "^data: ", "")
     local ok, result = pcall(vim.json.decode, chunk_cleaned)
 
-
     if (ok) then
-      local scontent = result.choices[1].delta.content
-      local finish_reason = result.choices[1].delta.finish_reason
+      local scontent = ''
+      if (result.choices == nil) then -- ollama
+        scontent = result.message.content
+      else -- openai
+        scontent = result.choices[1].delta.content
+      end
 
       if (type(scontent) ~= "string") then
         return
