@@ -59,6 +59,7 @@ function M.rewrite(line1, line2, messages, process)
   process = process or function(v) return v; end
   local buf = vim.api.nvim_get_current_buf()
 
+  local active_line = line2
   local chunk = ""
   local streamed = ""
   local callback = function(_, line)
@@ -83,9 +84,16 @@ function M.rewrite(line1, line2, messages, process)
       streamed = process(streamed .. scontent)
 
       local lines = M.split(streamed, "\n")
+      local newLines = {}
+      for _, row in ipairs(lines) do
+          if not row:match("^```") then
+              table.insert(newLines, row)
+          end
+      end
 
       vim.schedule(function()
-        vim.api.nvim_buf_set_lines(buf, line1, line1 + #lines, false, lines)
+        vim.api.nvim_buf_set_lines(buf, line2, active_line, false, newLines)
+        active_line = line2 + #newLines
       end)
       chunk = ""
     end
@@ -102,13 +110,22 @@ function M.read_text(line1, line2)
   return text
 end
 
+function M.read_buffer()
+    local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+    return table.concat(lines, '\n')
+end
+
 function M.run_command(line1, line2, key)
   local command = M.commands[key]
   local text = M.read_text(line1, line2)
+  local buf = M.read_buffer()
+  local filetype = vim.bo.filetype
 
   local messages = {}
   for _, value in ipairs(command) do
     local content = string.gsub(value.content, "TEXT", text)
+    content = string.gsub(content, "NVIM_BUFFER", buf)
+    content = string.gsub(content, "NVIM_FILETYPE", filetype)
     table.insert(messages, {
       role = value.role,
       content = content
