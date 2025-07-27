@@ -24,6 +24,7 @@ function M.read_file(file)
 end
 
 M.commands = vim.json.decode(M.read_file("~/.config/nvim/commands.json"))
+
 M.hl = vim.api.nvim_create_namespace("openai_vim_highlight")
 vim.api.nvim_create_autocmd("InsertEnter", {
   pattern = "*",
@@ -63,7 +64,7 @@ function M.split(str, delimiter)
 end
 
 function M.highlight(buf, line1, line2)
-  vim.highlight.range(buf, M.hl, "IncSearch", { line1, 0 }, { line2 - 1, -1 })
+  vim.highlight.range(buf, M.hl, "Visual", { line1, 0 }, { line2 - 1, -1 })
 end
 
 function M.rewrite(line1, line2, messages, process)
@@ -127,7 +128,20 @@ function M.read_buffer()
   return table.concat(lines, '\n')
 end
 
-function M.run_command(line1, line2, key)
+function M.run_command(line1, line2, key, question)
+  if (key == "list") then
+    Menu.menu(M.commands, function(newKey)
+      M.run_command(line1, line2, newKey)
+    end)
+  end
+  if (key == "reload") then
+    pcall(
+      os.execute,
+      "cat ~/.config/nvim/commands.yml | yq -o json > ~/.config/nvim/commands.json"
+    )
+    M.commands = vim.json.decode(M.read_file("~/.config/nvim/commands.json"))
+    return
+  end
   local command = M.commands[key]
   local text = M.read_text(line1, line2)
   local buf = M.read_buffer()
@@ -136,6 +150,7 @@ function M.run_command(line1, line2, key)
   local messages = {}
   for _, value in ipairs(command) do
     local content = string.gsub(value.content, "TEXT", text)
+    content = string.gsub(content, "QUESTION", question)
     content = string.gsub(content, "NVIM_BUFFER", buf)
     content = string.gsub(content, "NVIM_FILETYPE", filetype)
     table.insert(messages, {
@@ -149,24 +164,16 @@ end
 
 function M.openai(line1, line2, command)
   line1 = line1 - 1
-  if (command == "list") then
-    Menu.menu(M.commands, function(key)
-      M.run_command(line1, line2, key)
-    end)
-  elseif (command == "ask") then
+  if (command == "ask") then
     Ask.ask(function(question)
-      local text = M.read_text(line1, line2)
-      M.rewrite(line1, line2, {
-        {
-          role = "user",
-          content = question .. "\n\n" .. text
-        }
-      }, function(streamed)
-        return string.gsub(streamed, "```", "")
-      end);
+      if string.sub(question, 1, 1) == "/" then
+        local key = string.sub(question, 2)
+        return M.run_command(line1, line2, key, '')
+      end
+      M.run_command(line1, line2, "ask", question)
     end)
   else
-    M.run_command(line1, line2, command)
+    M.run_command(line1, line2, command, '')
   end
 end
 
