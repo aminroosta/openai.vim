@@ -67,8 +67,7 @@ function M.highlight(buf, line1, line2)
   vim.highlight.range(buf, M.hl, "Visual", { line1, 0 }, { line2 - 1, -1 })
 end
 
-function M.rewrite(line1, line2, messages, process)
-  process = process or function(v) return v; end
+function M.rewrite(line1, line2, messages)
   local buf = vim.api.nvim_get_current_buf()
 
   local current_line = line2
@@ -93,7 +92,7 @@ function M.rewrite(line1, line2, messages, process)
         return
       end
 
-      streamed = process(streamed .. scontent)
+      streamed = streamed .. scontent
 
       local lines = M.split(streamed, "\n")
       local newLines = {}
@@ -167,8 +166,9 @@ function M.openai(line1, line2, command)
   if (command == "ask") then
     Ask.ask(function(question)
       if string.sub(question, 1, 1) == "/" then
-        local key = string.sub(question, 2)
-        return M.run_command(line1, line2, key, '')
+        local words = M.split(string.sub(question, 2), " ")
+        local key = table.remove(words, 1)
+        return M.run_command(line1, line2, key, table.concat(words, " "))
       end
       M.run_command(line1, line2, "ask", question)
     end)
