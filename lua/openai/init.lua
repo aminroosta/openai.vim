@@ -24,6 +24,13 @@ function M.read_file(file)
 end
 
 M.commands = vim.json.decode(M.read_file("~/.config/nvim/commands.json"))
+M.hl = vim.api.nvim_create_namespace("openai_vim_highlight")
+vim.api.nvim_create_autocmd("InsertEnter", {
+  pattern = "*",
+  callback = function()
+    vim.api.nvim_buf_clear_namespace(0, M.hl, 0, -1)
+  end,
+})
 
 function M.post(messages, on_stdout)
   local data = vim.json.encode({
@@ -55,11 +62,15 @@ function M.split(str, delimiter)
   return result
 end
 
+function M.highlight(buf, line1, line2)
+  vim.highlight.range(buf, M.hl, "IncSearch", { line1, 0 }, { line2 - 1, -1 })
+end
+
 function M.rewrite(line1, line2, messages, process)
   process = process or function(v) return v; end
   local buf = vim.api.nvim_get_current_buf()
 
-  local active_line = line2
+  local current_line = line2
   local chunk = ""
   local streamed = ""
   local callback = function(_, line)
@@ -73,7 +84,7 @@ function M.rewrite(line1, line2, messages, process)
       local scontent = ''
       if (result.choices == nil) then -- ollama
         scontent = result.message.content
-      else -- openai
+      else                            -- openai
         scontent = result.choices[1].delta.content
       end
 
@@ -86,14 +97,15 @@ function M.rewrite(line1, line2, messages, process)
       local lines = M.split(streamed, "\n")
       local newLines = {}
       for _, row in ipairs(lines) do
-          if not row:match("^```") then
-              table.insert(newLines, row)
-          end
+        if not row:match("^```") then
+          table.insert(newLines, row)
+        end
       end
 
       vim.schedule(function()
-        vim.api.nvim_buf_set_lines(buf, line2, active_line, false, newLines)
-        active_line = line2 + #newLines
+        vim.api.nvim_buf_set_lines(buf, line2, current_line, false, newLines)
+        current_line = line2 + #newLines
+        M.highlight(buf, line2, current_line)
       end)
       chunk = ""
     end
@@ -111,8 +123,8 @@ function M.read_text(line1, line2)
 end
 
 function M.read_buffer()
-    local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
-    return table.concat(lines, '\n')
+  local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+  return table.concat(lines, '\n')
 end
 
 function M.run_command(line1, line2, key)
