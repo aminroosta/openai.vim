@@ -23,10 +23,40 @@ function M.read_file(file)
   return content
 end
 
+function M.with_cursor(content)
+  local cursor = vim.api.nvim_win_get_cursor(0)
+  local lines = M.split(content, "\n")
+  local line_cursor = cursor[1]
+  local col_cursor = cursor[2]
+
+  if line_cursor > #lines then
+    -- Cursor line is beyond content lines, append at the end
+    lines[#lines + 1] = "<CURSOR>"
+  else
+    local target_line = lines[line_cursor]
+    if col_cursor > #target_line then
+      -- Cursor column beyond line length, append at end
+      lines[line_cursor] = target_line .. "<CURSOR>"
+    else
+      -- Insert <CURSOR> at column (1-based)
+      -- Note: Lua string indexing is 1-based; col_cursor is 0-based, so add 1
+      local insert_pos = col_cursor
+      lines[line_cursor] = target_line:sub(1, insert_pos) .. "<CURSOR>" .. target_line:sub(insert_pos + 1)
+    end
+  end
+  return table.concat(lines, "\n")
+end
+
 M.commands = vim.json.decode(M.read_file("~/.config/nvim/commands.json"))
 
 M.hl = vim.api.nvim_create_namespace("openai_vim_highlight")
-vim.api.nvim_create_autocmd("InsertEnter", {
+-- vim.api.nvim_create_autocmd("InsertEnter", {
+--   pattern = "*",
+--   callback = function()
+--     vim.api.nvim_buf_clear_namespace(0, M.hl, 0, -1)
+--   end,
+-- })
+vim.api.nvim_create_autocmd({"CursorMoved" }, {
   pattern = "*",
   callback = function()
     vim.api.nvim_buf_clear_namespace(0, M.hl, 0, -1)
@@ -150,6 +180,11 @@ function M.run_command(line1, line2, key, question)
   for _, value in ipairs(command) do
     local content = string.gsub(value.content, "TEXT", text)
     content = string.gsub(content, "QUESTION", question)
+    content = string.gsub(
+      content,
+      "NVIM_BUFFER_WITH_CURSOR",
+      M.with_cursor(buf)
+    )
     content = string.gsub(content, "NVIM_BUFFER", buf)
     content = string.gsub(content, "NVIM_FILETYPE", filetype)
     table.insert(messages, {
@@ -161,7 +196,10 @@ function M.run_command(line1, line2, key, question)
   M.rewrite(line1, line2, messages)
 end
 
-function M.openai(line1, line2, command)
+function M.openai(line1, line2, args)
+  local args_tbl = M.split(args, " ")
+  local command = table.remove(args_tbl, 1)
+  local subcommand = table.concat(args_tbl, " ")
   line1 = line1 - 1
   if (command == "ask") then
     Ask.ask(function(question)
@@ -171,7 +209,7 @@ function M.openai(line1, line2, command)
         return M.run_command(line1, line2, key, table.concat(words, " "))
       end
       M.run_command(line1, line2, "ask", question)
-    end)
+    end, subcommand)
   else
     M.run_command(line1, line2, command, '')
   end

@@ -3,7 +3,10 @@ local event = require("nui.utils.autocmd").event
 
 local M = {}
 
-function M.ask(callback)
+function M.ask(callback, initial_text)
+  if initial_text ~= "" then
+    initial_text = initial_text .. " "
+  end
   local input = Input({
     enter = true,
     position = "10%",
@@ -20,7 +23,7 @@ function M.ask(callback)
     },
   }, {
     prompt = "> ",
-    default_value = "",
+    default_value = initial_text,
     on_close = function() end,
     on_submit = function(question)
       callback(question)
