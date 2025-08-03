@@ -4,7 +4,7 @@ local curl = require("plenary.curl")
 
 local OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 local OPENAI_ENDPOINT = os.getenv("OPENAI_ENDPOINT") or "https://api.openai.com/v1/chat/completions"
-local OPENAI_CHAT_MODEL = os.getenv("OPENAI_CHAT_MODEL") or "gpt-4o-mini"
+local OPENAI_CHAT_MODEL = os.getenv("OPENAI_CHAT_MODEL") or "gpt-4.1-mini"
 
 local M = {}
 
