@@ -220,7 +220,12 @@ end
 function M.openai(line1, line2, args)
   local args_tbl = M.split(args, " ")
   local command = table.remove(args_tbl, 1)
-  local subcommand = table.concat(args_tbl, " ")
+  local initial_text = table.concat(args_tbl, " ")
+
+  if string.sub(command, 1, 1) == "/" then
+    command = string.sub(command, 2)
+  end
+
   line1 = line1 - 1
   if (command == "ask") then
     Ask.ask(function(question)
@@ -230,7 +235,7 @@ function M.openai(line1, line2, args)
         return M.run_command(line1, line2, key, table.concat(words, " "))
       end
       M.run_command(line1, line2, "ask", question)
-    end, subcommand)
+    end, initial_text)
   else
     M.run_command(line1, line2, command, '')
   end
@@ -257,3 +262,4 @@ function M.setup(opts)
 end
 
 return M
+-- visual clue while waiting for response.

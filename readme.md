@@ -15,7 +15,9 @@ return {
   init = function()
     local keymap = vim.api.nvim_set_keymap
     keymap("v", "<cr>", ":Openai ask<cr>", { noremap = true })
-    keymap("n", "<c-cr>", ":Openai ask /e<cr>", { noremap = true })
+
+    keymap("i", "<c-cr>", "<C-o>:Openai ask /e<cr>", { noremap = true })
+    keymap("i", "<S-tab>", "<C-o>:Openai /autocomplete<cr>", { noremap = true })
   end,
   opts = {
     api_key = os.getenv("OPENAI_API_KEY"),
@@ -32,6 +34,10 @@ return {
 ```json
 {
   "ask": [
+    {
+      "role": "system",
+      "content": "You only output code"
+    },
     {
       "role": "user",
       "content": "QUESTION\n\nTEXT\n"
@@ -55,8 +61,22 @@ return {
   ],
   "r": [
     {
+      "role": "system",
+      "content": "NEVER reply anything but the updated text."
+    },
+    {
       "role": "user",
       "content": "Fix punctuation and grammatical mistakes:\n\nTEXT\n"
+    }
+  ],
+  "autocomplete": [
+    {
+      "role": "system",
+      "content": "Act as a NVIM_FILETYPE programmer.\nWrite the code snippet to complete the rest of the line at <CURSOR>.\n"
+    },
+    {
+      "role": "user",
+      "content": "NVIM_BUFFER_WITH_CURSOR\n"
     }
   ]
 }
@@ -72,13 +92,12 @@ return {
 
 # Providers
 
-* Ollama
-
+* OpenAI
 ```lua
   opts = {
-    api_key = "",
-    endpoint = "http://127.0.0.1:11434/api/chat",
-    model = "llama3.2",
+    api_key = os.getenv("OPENAI_API_KEY"),
+    endpoint = "https://api.openai.com/v1/chat/completions",
+    model = "gpt-4.1-mini",
     commands = "~/.config/nvim/commands.json"
   },
 ```
@@ -93,16 +112,17 @@ return {
   },
 ```
 
-* OpenAI
+* Ollama
+
 ```lua
   opts = {
-    api_key = os.getenv("OPENAI_API_KEY"),
-    endpoint = "https://api.openai.com/v1/chat/completions",
-    model = "gpt-4.1-mini",
+    api_key = "",
+    endpoint = "http://127.0.0.1:11434/api/chat",
+    model = "llama3.2",
     commands = "~/.config/nvim/commands.json"
   },
 ```
-
+ 
 * LMStudio
 ```lua
   opts = {
@@ -116,40 +136,54 @@ return {
 ## Configuration using yaml
 Create `~/.config/nvim/commands.yml` file, and manually convert it to json.
 ````yaml
-# cat ~/.config/nvim/commands.yml | yq -o json > ~/.config/nvim/commands.json
-ask:
-  - role: "user"
-    content: |
-      QUESTION
-
-      TEXT
-e:
-  - role: "system"
-    content: you are a code completion tool.
-  - role: "user"
-    content: |
-      task: QUESTION
-      ```NVIM_FILETYPE
-      NVIM_BUFFER_WITH_CURSOR
-      ```
-      - <CURSOR> is the cursor position.
-      - NEVER reply anything but the added code.
-      
-t:
-  - role: "user"
-    content: |
-      Implement the TODO and only return the added code.
-      ```NVIM_FILETYPE
-      NVIM_BUFFER
-      ```
-r:
-  - role: "system"
-    content: NEVER reply anything but the updated text.
-  - role: "user"
-    content: |
-      Fix punctuation and grammatical mistakes:
-      
-      TEXT
+{
+  "ask": [
+    {
+      "role": "system",
+      "content": "You only output code"
+    },
+    {
+      "role": "user",
+      "content": "QUESTION\n\nTEXT\n"
+    }
+  ],
+  "e": [
+    {
+      "role": "system",
+      "content": "you are a code completion tool."
+    },
+    {
+      "role": "user",
+      "content": "task: QUESTION\n```NVIM_FILETYPE\nNVIM_BUFFER_WITH_CURSOR\n```\n- <CURSOR> is the cursor position.\n- NEVER reply anything but the added code.\n"
+    }
+  ],
+  "t": [
+    {
+      "role": "user",
+      "content": "Implement the TODO and only return the added code.\n```NVIM_FILETYPE\nNVIM_BUFFER\n```\n"
+    }
+  ],
+  "r": [
+    {
+      "role": "system",
+      "content": "NEVER reply anything but the updated text."
+    },
+    {
+      "role": "user",
+      "content": "Fix punctuation and grammatical mistakes:\n\nTEXT\n"
+    }
+  ],
+  "autocomplete": [
+    {
+      "role": "system",
+      "content": "Act as a NVIM_FILETYPE programmer.\nWrite the code snippet to complete the rest of the line at <CURSOR>.\n"
+    },
+    {
+      "role": "user",
+      "content": "NVIM_BUFFER_WITH_CURSOR\n"
+    }
+  ]
+}
 ````
 
 `yq` is required for conversion, `brew install yq`.
