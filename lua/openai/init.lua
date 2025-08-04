@@ -52,12 +52,24 @@ function M.with_cursor(content)
 end
 
 function M.post(messages, on_stdout)
-  local data = vim.json.encode({
+  local body = {
     model = M.opts.model,
     messages = messages,
     max_tokens = 1024,
     stream = true,
-  })
+  }
+
+  if M.opts.is_anthropic then
+    body.messages = vim.iter(messages)
+        :filter(function(message)
+          return message.role ~= "system"
+        end):totable()
+    body.system = vim.iter(messages)
+        :find(function(m) return m.role == "system" end)
+        .content
+  else
+    body.messages = messages
+  end
 
   local headers = {
     ["Content-Type"] = "application/json",
@@ -70,7 +82,7 @@ function M.post(messages, on_stdout)
   return curl.post(M.opts.endpoint, {
     stream = on_stdout,
     headers = headers,
-    body = data,
+    body = vim.json.encode(body),
   })
 end
 
@@ -104,7 +116,7 @@ function M.rewrite(line1, line2, messages)
     -- openai has the extra "data:" prefix
     local chunk_cleaned = string.gsub(chunk, "^data: ", "")
     -- anthropic has extra "event: <type>: "
-    chunk_cleaned = string.gsub(chunk, "^event: .*: ", "")
+    chunk_cleaned = string.gsub(chunk_cleaned, "^event: .*: ", "")
     local ok, result = pcall(vim.json.decode, chunk_cleaned)
 
     if (ok) then
@@ -234,7 +246,13 @@ function M.setup(opts)
       )
     end
   end
+
   M.opts = opts
+
+  if string.find(M.opts.endpoint, "api.anthropic") then
+    M.opts.is_anthropic = true
+  end
+
   M.commands = vim.json.decode(M.read_file(M.opts.commands))
 end
 
