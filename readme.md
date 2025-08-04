@@ -136,54 +136,51 @@ return {
 ## Configuration using yaml
 Create `~/.config/nvim/commands.yml` file, and manually convert it to json.
 ````yaml
-{
-  "ask": [
-    {
-      "role": "system",
-      "content": "You only output code"
-    },
-    {
-      "role": "user",
-      "content": "QUESTION\n\nTEXT\n"
-    }
-  ],
-  "e": [
-    {
-      "role": "system",
-      "content": "you are a code completion tool."
-    },
-    {
-      "role": "user",
-      "content": "task: QUESTION\n```NVIM_FILETYPE\nNVIM_BUFFER_WITH_CURSOR\n```\n- <CURSOR> is the cursor position.\n- NEVER reply anything but the added code.\n"
-    }
-  ],
-  "t": [
-    {
-      "role": "user",
-      "content": "Implement the TODO and only return the added code.\n```NVIM_FILETYPE\nNVIM_BUFFER\n```\n"
-    }
-  ],
-  "r": [
-    {
-      "role": "system",
-      "content": "NEVER reply anything but the updated text."
-    },
-    {
-      "role": "user",
-      "content": "Fix punctuation and grammatical mistakes:\n\nTEXT\n"
-    }
-  ],
-  "autocomplete": [
-    {
-      "role": "system",
-      "content": "Act as a NVIM_FILETYPE programmer.\nWrite the code snippet to complete the rest of the line at <CURSOR>.\n"
-    },
-    {
-      "role": "user",
-      "content": "NVIM_BUFFER_WITH_CURSOR\n"
-    }
-  ]
-}
+# cat ~/.config/nvim/commands.yml | yq -o json > ~/.config/nvim/commands.json
+ask:
+  - role: "system"
+    content: You only output code
+  - role: "user"
+    content: |
+      QUESTION
+
+      TEXT
+e:
+  - role: "system"
+    content: you are a code completion tool.
+  - role: "user"
+    content: |
+      task: QUESTION
+      ```NVIM_FILETYPE
+      NVIM_BUFFER_WITH_CURSOR
+      ```
+      - <CURSOR> is the cursor position.
+      - NEVER reply anything but the added code.
+      
+t:
+  - role: "user"
+    content: |
+      Implement the TODO and only return the added code.
+      ```NVIM_FILETYPE
+      NVIM_BUFFER
+      ```
+r:
+  - role: "system"
+    content: NEVER reply anything but the updated text.
+  - role: "user"
+    content: |
+      Fix punctuation and grammatical mistakes:
+      
+      TEXT
+
+autocomplete:
+  - role: "system"
+    content: |
+      Act as a NVIM_FILETYPE programmer.
+      Write the code snippet to complete the rest of the line at <CURSOR>.
+  - role: "user"
+    content: |
+      NVIM_BUFFER_WITH_CURSOR
 ````
 
 `yq` is required for conversion, `brew install yq`.
