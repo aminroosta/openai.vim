@@ -1,4 +1,3 @@
-local Menu = require("openai.menu")
 local Ask = require("openai.ask")
 local curl = require("plenary.curl")
 
@@ -147,11 +146,6 @@ function M.read_buffer()
 end
 
 function M.run_command(line1, line2, key, question)
-  if (key == "list") then
-    Menu.menu(M.commands, function(newKey)
-      M.run_command(line1, line2, newKey)
-    end)
-  end
   if (key == "reload") then
     pcall(
       os.execute,
@@ -205,6 +199,15 @@ function M.openai(line1, line2, args)
 end
 
 function M.setup(opts)
+  local required_keys = { "api_key", "endpoint", "model", "commands" }
+  for _, key in ipairs(required_keys) do
+    if opts[key] == nil then
+      vim.notify(
+        "openai.nvim: opts." .. key .. " is missing",
+        vim.log.levels.WARN
+      )
+    end
+  end
   M.opts = opts
   M.commands = vim.json.decode(M.read_file(M.opts.commands))
 end

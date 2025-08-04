@@ -2,112 +2,145 @@
 
 A Neovim plugin that exposes OpenAI’s Chat Completion API.
 
-## Installation
-3. Using [packer.nvim](https://github.com/wbthomason/packer.nvim), add the following code to your `init.lua` file:
+## Installation (Lazy.nvim)
 ```lua
-require('packer').startup(function()
-  use {
-    "aminroosta/openai.vim",
-    requires = {
-      "nvim-lua/plenary.nvim",
-      "MunifTanjim/nui.nvim",
-    }
-  }
-end)
+-- ~/.config/nvim/lua/plugins/openai.lua
+return {
+  "aminroosta/openai.vim",
+  enabled = true,
+  dependencies = {
+    "nvim-lua/plenary.nvim",
+    "MunifTanjim/nui.nvim",
+  },
+  init = function()
+    local keymap = vim.api.nvim_set_keymap
+    keymap("v", "<cr>", ":Openai ask<cr>", { noremap = true })
+    keymap("n", "<c-cr>", ":Openai ask /e<cr>", { noremap = true })
+  end,
+  opts = {
+    api_key = os.getenv("OPENAI_API_KEY"),
+    endpoint = "https://api.openai.com/v1/chat/completions",
+    model = "gpt-4.1-mini",
+    commands = "~/.config/nvim/commands.json"
+  },
+}
 ```
 
-#### Installation Ollama
-1. Install [ollama](https://ollama.com/download) and pull a model to be used: `ollama pull llama3.2`
-2. Export the following variables to your `~/.bashrc`
-```bash
-export OPENAI_API_KEY=''
-export OPENAI_CHAT_MODEL='llama3.2'
-export OPENAI_ENDPOINT='http://127.0.0.1:11434/api/chat'
-```
-#### Installation OpenAI
-1. Add your `OPENAI_API_KEY` to the environment variables by running the following command in the terminal:
-```bash
-export OPENAI_API_KEY='your-api-key-goes-here'
-export OPENAI_CHAT_MODEL='gpt-4o-mini'
-```
-#### Installation LMStudio
-1. Install [lmstudio](https://lmstudio.ai/), and download a model to be used: `lmstudio-community/Llama-3.2-3B-Instruct-GGUF`.
-2. Start the server from the "Local Server" tab in the app.
-3. Export the following variables to your `~/.bashrc`
-```bash
-export OPENAI_API_KEY=''
-export OPENAI_CHAT_MODEL='lmstudio-community/Llama-3.2-3B-Instruct-GGUF'
-export OPENAI_ENDPOINT='http://127.0.0.1:1234/v1/chat/completions'
-```
+## Commands
+<details> <summary>Copy this to `~/.config/nvim/commands.json`: </summary>
 
-## Configuration using JSON
-To customize your commands, create or modify the `~/.config/nvim/commands.json` file. This file should contain your command configurations in JSON format.  
-For information on structuring your commands, refer to OpenAI's [Chat Completion API](https://platform.openai.com/docs/guides/text-generation/chat-completions-api) documentation.
-
-Here is an example, the `TEXT` keyword is replaced by the visual selection in vim.
 ```json
 {
   "ask": [
     {
       "role": "user",
-      "content": "TEXT"
+      "content": "QUESTION\n\nTEXT\n"
     }
   ],
-  "jsdoc": [
+  "e": [
+    {
+      "role": "system",
+      "content": "you are a code completion tool."
+    },
     {
       "role": "user",
-      "content": "Convert this to JSDoc format:\nTEXT"
+      "content": "task: QUESTION\n```NVIM_FILETYPE\nNVIM_BUFFER_WITH_CURSOR\n```\n- <CURSOR> is the cursor position.\n- NEVER reply anything but the added code.\n"
     }
   ],
-  "rewrite": [
+  "t": [
     {
       "role": "user",
-      "content": "Fix grammatical mistakes and reorder sentences if needed:\n\nTEXT"
+      "content": "Implement the TODO and only return the added code.\n```NVIM_FILETYPE\nNVIM_BUFFER\n```\n"
     }
   ],
-  "eng": [
+  "r": [
     {
       "role": "user",
-      "content": "Rewrite this in natural english:\n\nTEXT"
+      "content": "Fix punctuation and grammatical mistakes:\n\nTEXT\n"
     }
   ]
 }
 ```
 
-## Usage
+</details>
 
-The plugin exposes a visual mode command `:Openai` that takes an argument, the special argument `list` shows a popup.
+- `QUESTION` is what you type in the modal.
+- `TEXT` is the selected text in visual mode.
+- `markdown` is `vim.o.filetype`.
+- `NVIM_BUFFER` is the content of the current buffer.
+- `NVIM_BUFFER_WITH_CURSOR` is the content of the buffer with the cursor position marked with `<CURSOR>`.
 
-```vim
-:'<,'>Openai list
+# Providers
+
+* Ollama
+
+```lua
+  opts = {
+    api_key = "",
+    endpoint = "http://127.0.0.1:11434/api/chat",
+    model = "llama3.2",
+    commands = "~/.config/nvim/commands.json"
+  },
 ```
 
-The first argument references the key in your `~/.config/nvim/commands.json` file.
 
-```vim
-:'<,'>Openai ask
-:'<,'>Openai jsdoc
-:'<,'>Openai rewrite
-:'<,'>Openai eng
+* OpenAI
+```lua
+  opts = {
+    api_key = os.getenv("OPENAI_API_KEY"),
+    endpoint = "https://api.openai.com/v1/chat/completions",
+    model = "gpt-4.1-mini",
+    commands = "~/.config/nvim/commands.json"
+  },
+```
+
+* LMStudio
+```lua
+  opts = {
+    api_key = "",
+    endpoint = "http://127.0.0.1:1234/v1/chat/completions",
+    model = "lmstudio-community/Llama-3.2-3B-Instruct-GGUF",
+    commands = "~/.config/nvim/commands.json"
+  },
 ```
 
 ## Configuration using yaml
-If you find `.yaml` files easier to modify and maintain, create `~/.config/nvim/commands.yml` file, and manually convert it to json.
-
-```yaml
+Create `~/.config/nvim/commands.yml` file, and manually convert it to json.
+````yaml
 # cat ~/.config/nvim/commands.yml | yq -o json > ~/.config/nvim/commands.json
-jsdoc:
-  - role: "user"
-    content: "Convert this to JSDoc format:\nTEXT"
 ask:
   - role: "user"
-    content: "TEXT"
-rewrite:
-  - role: "user"
-    content: "Fix grammatical mistakes and reorder sentences if needed:\n\nTEXT"
-eng:
-  - role: "user"
-    content: "Rewrite this in natural english:\n\nTEXT"
-```
+    content: |
+      QUESTION
 
-You'd need to `brew install yq` for that conversion to work.
+      TEXT
+e:
+  - role: "system"
+    content: you are a code completion tool.
+  - role: "user"
+    content: |
+      task: QUESTION
+      ```NVIM_FILETYPE
+      NVIM_BUFFER_WITH_CURSOR
+      ```
+      - <CURSOR> is the cursor position.
+      - NEVER reply anything but the added code.
+      
+t:
+  - role: "user"
+    content: |
+      Implement the TODO and only return the added code.
+      ```NVIM_FILETYPE
+      NVIM_BUFFER
+      ```
+r:
+  - role: "system"
+    content: NEVER reply anything but the updated text.
+  - role: "user"
+    content: |
+      Fix punctuation and grammatical mistakes:
+      
+      TEXT
+````
+
+`yq` is required for conversion, `brew install yq`.
