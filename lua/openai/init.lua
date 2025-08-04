@@ -2,11 +2,16 @@ local Menu = require("openai.menu")
 local Ask = require("openai.ask")
 local curl = require("plenary.curl")
 
-local OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-local OPENAI_ENDPOINT = os.getenv("OPENAI_ENDPOINT") or "https://api.openai.com/v1/chat/completions"
-local OPENAI_CHAT_MODEL = os.getenv("OPENAI_CHAT_MODEL") or "gpt-4.1-mini"
-
 local M = {}
+
+-- highlight
+M.hl = vim.api.nvim_create_namespace("openai_vim_highlight")
+vim.api.nvim_create_autocmd({ "CursorMoved" }, {
+  pattern = "*",
+  callback = function()
+    vim.api.nvim_buf_clear_namespace(0, M.hl, 0, -1)
+  end,
+})
 
 function M.read_file(file)
   local filepath = vim.fn.expand(file)
@@ -47,33 +52,17 @@ function M.with_cursor(content)
   return table.concat(lines, "\n")
 end
 
-M.commands = vim.json.decode(M.read_file("~/.config/nvim/commands.json"))
-
-M.hl = vim.api.nvim_create_namespace("openai_vim_highlight")
--- vim.api.nvim_create_autocmd("InsertEnter", {
---   pattern = "*",
---   callback = function()
---     vim.api.nvim_buf_clear_namespace(0, M.hl, 0, -1)
---   end,
--- })
-vim.api.nvim_create_autocmd({"CursorMoved" }, {
-  pattern = "*",
-  callback = function()
-    vim.api.nvim_buf_clear_namespace(0, M.hl, 0, -1)
-  end,
-})
-
 function M.post(messages, on_stdout)
   local data = vim.json.encode({
-    model = OPENAI_CHAT_MODEL,
+    model = M.opts.model,
     messages = messages,
     stream = true,
   })
 
-  return curl.post(OPENAI_ENDPOINT, {
+  return curl.post(M.opts.endpoint, {
     stream = on_stdout,
     headers = {
-      ["Authorization"] = "Bearer " .. OPENAI_API_KEY,
+      ["Authorization"] = "Bearer " .. M.opts.api_key,
       ["Content-Type"] = "application/json"
     },
     body = data,
@@ -213,6 +202,11 @@ function M.openai(line1, line2, args)
   else
     M.run_command(line1, line2, command, '')
   end
+end
+
+function M.setup(opts)
+  M.opts = opts
+  M.commands = vim.json.decode(M.read_file(M.opts.commands))
 end
 
 return M
