@@ -55,15 +55,21 @@ function M.post(messages, on_stdout)
   local data = vim.json.encode({
     model = M.opts.model,
     messages = messages,
+    max_tokens = 1024,
     stream = true,
   })
 
+  local headers = {
+    ["Content-Type"] = "application/json",
+    -- openai
+    ["Authorization"] = "Bearer " .. M.opts.api_key,
+    -- anthropic
+    ["x-api-key"] = M.opts.api_key,
+    ["anthropic-version"] = "2023-06-01"
+  }
   return curl.post(M.opts.endpoint, {
     stream = on_stdout,
-    headers = {
-      ["Authorization"] = "Bearer " .. M.opts.api_key,
-      ["Content-Type"] = "application/json"
-    },
+    headers = headers,
     body = data,
   })
 end
@@ -91,19 +97,39 @@ function M.rewrite(line1, line2, messages)
   local current_line = line2
   local chunk = ""
   local streamed = ""
+  local tool_call = ''
   local callback = function(_, line)
     chunk = chunk .. line
 
     -- openai has the extra "data:" prefix
     local chunk_cleaned = string.gsub(chunk, "^data: ", "")
+    -- anthropic has extra "event: <type>: "
+    chunk_cleaned = string.gsub(chunk, "^event: .*: ", "")
     local ok, result = pcall(vim.json.decode, chunk_cleaned)
 
     if (ok) then
       local scontent = ''
-      if (result.choices == nil) then -- ollama
-        scontent = result.message.content
-      else                            -- openai
+      if result.choices ~= nil and result.choices[1] ~= nil then
+        -- openai
         scontent = result.choices[1].delta.content
+      elseif result.message ~= nil and result.message.content ~= nil then
+        -- ollama
+        scontent = result.message.content
+      elseif result.type == "content_block_delta" then
+        -- https://docs.anthropic.com/en/docs/build-with-claude/streaming
+        if result.delta.type == "text_delta" then
+          scontent = result.delta.text
+        elseif result.delta.type == "tool_use" then
+          tool_call = tool_call .. result.delta.name
+        elseif result.delta.type == "input_json_delta" then
+          tool_call = tool_call .. result.delta.partial_json
+        end
+      elseif result.type == "message_delta" then
+        -- https://docs.anthropic.com/en/docs/agents-and-tools/tool-use
+        if result.delta.stop_reason == "tool_use" then
+          -- TODO: implement tools
+          vim.print(tool_call)
+        end
       end
 
       if (type(scontent) ~= "string") then

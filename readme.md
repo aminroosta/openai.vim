@@ -83,6 +83,15 @@ return {
   },
 ```
 
+* anthropic
+```lua
+  opts = {
+    api_key = os.getenv("ANTHROPIC_API_KEY"),
+    endpoint = "https://api.anthropic.com/v1/messages",
+    model = "claude-sonnet-4-20250514",
+    commands = "~/.config/nvim/commands.json"
+  },
+```
 
 * OpenAI
 ```lua
