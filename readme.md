@@ -1,6 +1,6 @@
-## openai.vim
+## openai.nvim
 
-A Neovim plugin that exposes OpenAI’s Chat Completion API.
+A Neovim plugin for AI-assisted code completion. It supports multiple providers and offers easy configuration.
 
 ## Installation (Lazy.nvim)
 ```lua
